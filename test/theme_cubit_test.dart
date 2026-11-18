@@ -18,16 +18,25 @@ void main() {
     });
 
     blocTest<ThemeCubit, ThemeState>(
-      'toggle alterna de oscuro a claro y viceversa',
-      build: ThemeCubit.new,
-      act: (cubit) {
-        cubit.toggle();
-        cubit.toggle();
+      'toggle recorre claro → oscuro → sistema → claro',
+      build: () => ThemeCubit(initialMode: ThemeMode.light),
+      act: (cubit) async {
+        await cubit.toggle();
+        await cubit.toggle();
+        await cubit.toggle();
       },
       expect: () => const [
         ThemeState(mode: ThemeMode.dark),
+        ThemeState(mode: ThemeMode.system),
         ThemeState(mode: ThemeMode.light),
       ],
+    );
+
+    blocTest<ThemeCubit, ThemeState>(
+      'desde el modo sistema, el primer toque lleva a claro',
+      build: ThemeCubit.new,
+      act: (cubit) => cubit.toggle(),
+      expect: () => const [ThemeState(mode: ThemeMode.light)],
     );
 
     blocTest<ThemeCubit, ThemeState>(

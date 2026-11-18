@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wallet_unsaac/core/config/firebase_status.dart';
 import 'package:wallet_unsaac/core/theme/theme_cubit.dart';
+import 'package:wallet_unsaac/core/theme/theme_state.dart';
 import 'package:wallet_unsaac/features/wallet/domain/entities/wallet_summary.dart';
 import 'package:wallet_unsaac/features/wallet/domain/repositories/wallet_repository.dart';
 import 'package:wallet_unsaac/features/wallet/presentation/widgets/balance_card.dart';
@@ -56,7 +57,6 @@ class _WalletHomePageState extends State<WalletHomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -75,12 +75,31 @@ class _WalletHomePageState extends State<WalletHomePage> {
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: isDark ? 'Activar tema claro' : 'Activar tema oscuro',
-            icon: Icon(
-              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-            ),
-            onPressed: () => context.read<ThemeCubit>().toggle(),
+          // Reto 1: el icono y el tooltip reflejan el modo actual. Solo este
+          // botón se reconstruye cuando cambia `mode`.
+          BlocSelector<ThemeCubit, ThemeState, ThemeMode>(
+            selector: (state) => state.mode,
+            builder: (context, mode) {
+              final (icon, tooltip) = switch (mode) {
+                ThemeMode.light => (
+                  Icons.light_mode_outlined,
+                  'Tema claro · cambiar a oscuro',
+                ),
+                ThemeMode.dark => (
+                  Icons.dark_mode_outlined,
+                  'Tema oscuro · cambiar a sistema',
+                ),
+                ThemeMode.system => (
+                  Icons.brightness_auto_outlined,
+                  'Tema del sistema · cambiar a claro',
+                ),
+              };
+              return IconButton(
+                tooltip: tooltip,
+                icon: Icon(icon),
+                onPressed: () => context.read<ThemeCubit>().toggle(),
+              );
+            },
           ),
           const SizedBox(width: 8),
         ],
