@@ -13,11 +13,10 @@ import 'package:wallet_unsaac/core/theme/theme_state.dart';
 /// a través de [ThemePreferences]. Si no se inyectan preferencias (pruebas
 /// antiguas), el Cubit funciona igual pero sin persistir.
 class ThemeCubit extends Cubit<ThemeState> {
-  ThemeCubit({
+    ThemeCubit({
     ThemeMode initialMode = ThemeMode.system,
-    ThemePreferences? preferences,
-  }) : _preferences = preferences,
-       super(ThemeState(mode: initialMode));
+    this._preferences,
+  }) : super(ThemeState(mode: initialMode));
 
   final ThemePreferences? _preferences;
 
