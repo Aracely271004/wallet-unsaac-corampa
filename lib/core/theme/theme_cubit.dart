@@ -39,4 +39,7 @@ class ThemeCubit extends Cubit<ThemeState> {
   }
 
   Future<void> useSystemMode() => setMode(ThemeMode.system);
+
+  /// Reto 4: cambia el color semilla sin tocar el modo claro/oscuro.
+  void setSeedColor(Color color) => emit(state.copyWith(seedColor: color));
 }

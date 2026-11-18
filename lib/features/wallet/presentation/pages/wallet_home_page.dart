@@ -11,6 +11,7 @@ import 'package:wallet_unsaac/features/wallet/presentation/cubit/privacy_state.d
 import 'package:wallet_unsaac/features/wallet/presentation/widgets/balance_card.dart';
 import 'package:wallet_unsaac/features/wallet/presentation/widgets/firebase_status_card.dart';
 import 'package:wallet_unsaac/features/wallet/presentation/widgets/movement_tile.dart';
+import 'package:wallet_unsaac/features/wallet/presentation/widgets/seed_color_sheet.dart';
 
 /// Pantalla principal de Wallet UNSAAC (Sesión 1).
 ///
@@ -43,6 +44,12 @@ class WalletHomePage extends StatelessWidget {
           ],
         ),
         actions: [
+          // Reto 4: abre el selector de color semilla.
+          IconButton(
+            tooltip: 'Cambiar color del tema',
+            icon: const Icon(Icons.palette_outlined),
+            onPressed: () => SeedColorSheet.show(context),
+          ),
           // Reto 1: el icono y el tooltip reflejan el modo actual. Solo este
           // botón se reconstruye cuando cambia `mode`.
           BlocSelector<ThemeCubit, ThemeState, ThemeMode>(

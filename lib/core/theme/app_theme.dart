@@ -6,16 +6,21 @@ import 'package:flutter/material.dart';
 /// UNSAAC). `ColorScheme.fromSeed` deriva todos los roles de color para los
 /// modos claro y oscuro, de modo que no se codifican colores sueltos en las
 /// pantallas.
+///
+/// Reto 4: `light` y `dark` reciben el color semilla elegido por el usuario.
+/// Si no se indica, se usa el granate institucional.
 abstract final class AppTheme {
   static const Color seed = Color(0xFF7A1F2B);
 
-  static ThemeData light() => _build(Brightness.light);
+  static ThemeData light({Color seedColor = seed}) =>
+      _build(Brightness.light, seedColor);
 
-  static ThemeData dark() => _build(Brightness.dark);
+  static ThemeData dark({Color seedColor = seed}) =>
+      _build(Brightness.dark, seedColor);
 
-  static ThemeData _build(Brightness brightness) {
+  static ThemeData _build(Brightness brightness, Color seedColor) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: seed,
+      seedColor: seedColor,
       brightness: brightness,
     );
 
