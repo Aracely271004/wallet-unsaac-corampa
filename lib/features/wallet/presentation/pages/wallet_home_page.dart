@@ -4,7 +4,8 @@ import 'package:wallet_unsaac/core/config/firebase_status.dart';
 import 'package:wallet_unsaac/core/theme/theme_cubit.dart';
 import 'package:wallet_unsaac/core/theme/theme_state.dart';
 import 'package:wallet_unsaac/features/wallet/domain/entities/wallet_summary.dart';
-import 'package:wallet_unsaac/features/wallet/domain/repositories/wallet_repository.dart';
+import 'package:wallet_unsaac/features/wallet/presentation/cubit/balance_cubit.dart';
+import 'package:wallet_unsaac/features/wallet/presentation/cubit/balance_state.dart';
 import 'package:wallet_unsaac/features/wallet/presentation/cubit/privacy_cubit.dart';
 import 'package:wallet_unsaac/features/wallet/presentation/cubit/privacy_state.dart';
 import 'package:wallet_unsaac/features/wallet/presentation/widgets/balance_card.dart';
@@ -13,48 +14,13 @@ import 'package:wallet_unsaac/features/wallet/presentation/widgets/movement_tile
 
 /// Pantalla principal de Wallet UNSAAC (Sesión 1).
 ///
-/// Muestra el resumen que entrega el repositorio y permite alternar el tema.
-/// El cambio de tema lo resuelve `ThemeCubit`; la pantalla solo envía la
-/// intención del usuario y se reconstruye cuando el estado cambia.
-class WalletHomePage extends StatefulWidget {
+/// Muestra el resumen de la billetera y permite alternar el tema.
+/// Reto 3: la pantalla ya no llama al repositorio ni usa `FutureBuilder`.
+/// Escucha a `BalanceCubit` y dibuja cada estado (carga, éxito o error).
+class WalletHomePage extends StatelessWidget {
   const WalletHomePage({super.key, required this.firebaseStatus});
 
   final FirebaseStatus firebaseStatus;
-
-  @override
-  State<WalletHomePage> createState() => _WalletHomePageState();
-}
-
-class _WalletHomePageState extends State<WalletHomePage> {
-  late Future<WalletSummary> _summaryFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _summaryFuture = context.read<WalletRepository>().loadSummary();
-  }
-
-  Future<void> _reload() async {
-    final future = context.read<WalletRepository>().loadSummary();
-    setState(() => _summaryFuture = future);
-    try {
-      await future;
-    } on Exception {
-      // El estado de error se representa en la interfaz; aquí solo se evita
-      // que el RefreshIndicator propague la excepción.
-    }
-  }
-
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('$feature se habilita en la Sesión 2.'),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,113 +72,147 @@ class _WalletHomePageState extends State<WalletHomePage> {
           const SizedBox(width: 8),
         ],
       ),
-      body: FutureBuilder<WalletSummary>(
-        future: _summaryFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return _ErrorView(
-              message: 'No se pudo cargar el resumen de la billetera.',
-              onRetry: _reload,
-            );
-          }
-
-          final summary = snapshot.data!;
-          return RefreshIndicator(
-            onRefresh: _reload,
-            // Reto 2: la pantalla no guarda la bandera de privacidad; solo
-            // la lee del PrivacyCubit y la pasa a los widgets.
+      body: BlocBuilder<BalanceCubit, BalanceState>(
+        builder: (context, state) => switch (state) {
+          BalanceInitial() || BalanceLoading() => const Center(
+            child: CircularProgressIndicator(
+              semanticsLabel: 'Cargando el resumen de la billetera',
+            ),
+          ),
+          BalanceFailure(:final message) => _ErrorView(
+            message: message,
+            onRetry: () => context.read<BalanceCubit>().retry(),
+          ),
+          BalanceSuccess(:final summary) => RefreshIndicator(
+            onRefresh: () => context.read<BalanceCubit>().refresh(),
+            // Reto 2: la bandera de privacidad viene del PrivacyCubit.
             child: BlocBuilder<PrivacyCubit, PrivacyState>(
-              builder: (context, privacy) => ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                children: [
-                  Text(
-                    'Hola, estudiante UNSAAC',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Este es el resumen de tus finanzas en noviembre de 2026.',
-                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: 20),
-                  BalanceCard(
-                    summary: summary,
-                    hideBalance: privacy.hidden,
-                    onToggleVisibility: () =>
-                        context.read<PrivacyCubit>().toggle(),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.tonalIcon(
-                          onPressed: () => _showComingSoon('Registrar ingreso'),
-                          icon: const Icon(Icons.add_rounded),
-                          label: const Text('Ingreso'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _showComingSoon('Registrar egreso'),
-                          icon: const Icon(Icons.remove_rounded),
-                          label: const Text('Egreso'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Últimos movimientos',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => _showComingSoon('El historial completo'),
-                        child: const Text('Ver todos'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  if (summary.isEmpty)
-                    const _EmptyMovements()
-                  else
-                    for (final movement in summary.movements) ...[
-                      MovementTile(
-                        movement: movement,
-                        hideAmount: privacy.hidden,
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                  const SizedBox(height: 12),
-                  FirebaseStatusCard(status: widget.firebaseStatus),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      'Datos de demostración · Wallet UNSAAC 1.0.0',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
+              builder: (context, privacy) => _SummaryView(
+                summary: summary,
+                hidden: privacy.hidden,
+                firebaseStatus: firebaseStatus,
+                onToggleVisibility: () =>
+                    context.read<PrivacyCubit>().toggle(),
+                onComingSoon: (feature) => _showComingSoon(context, feature),
               ),
             ),
-          );
+          ),
         },
       ),
     );
   }
+}
+
+/// Contenido del estado de éxito: saldo, acciones y movimientos.
+class _SummaryView extends StatelessWidget {
+  const _SummaryView({
+    required this.summary,
+    required this.hidden,
+    required this.firebaseStatus,
+    required this.onToggleVisibility,
+    required this.onComingSoon,
+  });
+
+  final WalletSummary summary;
+  final bool hidden;
+  final FirebaseStatus firebaseStatus;
+  final VoidCallback onToggleVisibility;
+  final ValueChanged<String> onComingSoon;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+      children: [
+        Text(
+          'Hola, estudiante UNSAAC',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Este es el resumen de tus finanzas en noviembre de 2026.',
+          style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 20),
+        BalanceCard(
+          summary: summary,
+          hideBalance: hidden,
+          onToggleVisibility: onToggleVisibility,
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: () => onComingSoon('Registrar ingreso'),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Ingreso'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => onComingSoon('Registrar egreso'),
+                icon: const Icon(Icons.remove_rounded),
+                label: const Text('Egreso'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 28),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Últimos movimientos',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => onComingSoon('El historial completo'),
+              child: const Text('Ver todos'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        if (summary.isEmpty)
+          const _EmptyMovements()
+        else
+          for (final movement in summary.movements) ...[
+            MovementTile(movement: movement, hideAmount: hidden),
+            const SizedBox(height: 10),
+          ],
+        const SizedBox(height: 12),
+        FirebaseStatusCard(status: firebaseStatus),
+        const SizedBox(height: 16),
+        Center(
+          child: Text(
+            'Datos de demostración · Wallet UNSAAC 1.0.0',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+void _showComingSoon(BuildContext context, String feature) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(
+      SnackBar(
+        content: Text('$feature se habilita en la Sesión 2.'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
 }
 
 class _ErrorView extends StatelessWidget {

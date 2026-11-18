@@ -3,6 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wallet_unsaac/app.dart';
 import 'package:wallet_unsaac/core/config/firebase_bootstrap.dart';
 import 'package:wallet_unsaac/core/theme/theme_preferences.dart';
+import 'package:wallet_unsaac/features/wallet/data/repositories/flaky_wallet_repository.dart';
+
+/// Reto 3: `flutter run --dart-define=SIMULAR_ERROR=true` arranca con un
+/// repositorio que falla la primera vez, para capturar carga, error y
+/// recuperación con el botón «Reintentar».
+const bool _simulateError = bool.fromEnvironment('SIMULAR_ERROR');
 
 /// Punto de entrada de Wallet UNSAAC.
 ///
@@ -29,6 +35,7 @@ Future<void> main() async {
       firebaseStatus: firebaseStatus,
       themePreferences: themePreferences,
       initialThemeMode: initialThemeMode,
+      walletRepository: _simulateError ? FlakyWalletRepository() : null,
     ),
   );
 }
