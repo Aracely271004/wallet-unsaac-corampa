@@ -179,6 +179,26 @@ un Bloc completo con eventos, para contrastar ambos enfoques.
 > falla si la ruta del proyecto contiene acentos. Es un problema del servidor de
 > análisis, no del código. Para verificarlo, copie el proyecto a una ruta ASCII.
 
+## Retos de la Sesión 1
+
+Autora: Aracely Fiorela Corampa Palacios (código 222067). Un commit por reto.
+
+| Reto | Qué agrega | Archivos principales | Pruebas |
+|---|---|---|---|
+| 1 · Tema persistente | `ThemePreferences` con `shared_preferences`, lectura antes de `runApp`, ciclo claro → oscuro → sistema | `core/theme/theme_preferences.dart`, `theme_cubit.dart`, `main.dart` | `test/theme_preferences_test.dart`, `test/theme_cubit_test.dart` |
+| 2 · Saldo privado | `PrivacyCubit` y botón de ojo que enmascara saldo, totales y movimientos | `presentation/cubit/privacy_*.dart`, `balance_card.dart`, `movement_tile.dart` | `test/privacy_cubit_test.dart`, `test/privacy_widget_test.dart` |
+| 3 · Estados del saldo | `BalanceCubit` con estados sellados; la pantalla ya no usa `FutureBuilder` | `presentation/cubit/balance_*.dart`, `wallet_home_page.dart`, `app.dart` | `test/balance_cubit_test.dart`, `test/balance_widget_test.dart` |
+| 4 · Color semilla | `seedColor` en `ThemeState`, `AppTheme` parametrizado y hoja con cinco colores | `core/theme/seed_colors.dart`, `widgets/seed_color_sheet.dart` | `test/seed_color_test.dart`, `test/seed_color_widget_test.dart` |
+
+Para capturar los estados de carga, error y reintento del Reto 3:
+
+```bash
+flutter run --dart-define=SIMULAR_ERROR=true
+```
+
+La primera carga tarda 2 s y falla; al pulsar **Reintentar** vuelve a cargar y
+muestra el resumen.
+
 ## Referencias
 
 - Bloc Library. (2026). *Bloc library documentation*. https://bloclibrary.dev/
